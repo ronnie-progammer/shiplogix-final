@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.venv/
+venv/
+.env
+
+# DB and ML artifacts
+backend/shiplogiz.db
+backend/ml/artifacts/*.joblib
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# OS
+.DS_Store
