@@ -1,8 +1,10 @@
 from collections import defaultdict
+from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from carriers import get_adapter
 from database import get_db
 from models import Shipment
 from schemas import CarrierStats
@@ -58,3 +60,24 @@ def list_carriers(db: Session = Depends(get_db)):
             )
         )
     return sorted(result, key=lambda x: x.total_shipments, reverse=True)
+
+
+@router.get("/live/{tracking_number}")
+async def live_track(
+    tracking_number: str,
+    carrier: Optional[str] = Query(None, description="fedex|ups|usps|dhl"),
+    db: Session = Depends(get_db),
+):
+    """Live carrier tracking — real API when keys present, mock fallback otherwise."""
+    # Auto-detect carrier from DB if not provided
+    if not carrier:
+        row = db.query(Shipment.carrier).filter(
+            Shipment.shipment_id == tracking_number.upper()
+        ).first()
+        carrier = row[0] if row else "fedex"
+
+    adapter = get_adapter(carrier)
+    result = await adapter.track(tracking_number)
+    if result is None:
+        raise HTTPException(status_code=502, detail="Carrier API unavailable")
+    return result
