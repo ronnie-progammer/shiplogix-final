@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Navbar from './components/Navbar'
 import Dashboard from './pages/Dashboard'
@@ -7,8 +7,12 @@ import Carriers from './pages/Carriers'
 import RoutesPage from './pages/Routes'
 import Anomalies from './pages/Anomalies'
 import Predictions from './pages/Predictions'
+import TrackShipment from './pages/TrackShipment'
+import RouteOptimizer from './pages/RouteOptimizer'
+import Defense from './pages/Defense'
+import Carbon from './pages/Carbon'
 
-export default function App() {
+function PrivateLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0f1a]">
       <Sidebar />
@@ -22,9 +26,28 @@ export default function App() {
             <Route path="/routes" element={<RoutesPage />} />
             <Route path="/anomalies" element={<Anomalies />} />
             <Route path="/predictions" element={<Predictions />} />
+            <Route path="/optimizer" element={<RouteOptimizer />} />
+            <Route path="/defense" element={<Defense />} />
+            <Route path="/carbon" element={<Carbon />} />
           </Routes>
         </main>
       </div>
     </div>
   )
+}
+
+export default function App() {
+  const { pathname } = useLocation()
+  const isPublic = pathname.startsWith('/track')
+
+  if (isPublic) {
+    return (
+      <Routes>
+        <Route path="/track" element={<TrackShipment />} />
+        <Route path="/track/:id" element={<TrackShipment />} />
+      </Routes>
+    )
+  }
+
+  return <PrivateLayout />
 }
