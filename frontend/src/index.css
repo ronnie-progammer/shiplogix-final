@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0a0f1a] text-gray-200 font-mono antialiased;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-[#0a0f1a];
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-[#1e2a3a] rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-[#10b981];
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-[#0f1923] border border-[#1e2a3a] rounded-lg;
+  }
+  .btn-primary {
+    @apply bg-[#10b981] hover:bg-[#059669] text-black font-semibold px-4 py-2 rounded-md text-sm transition-colors;
+  }
+  .btn-secondary {
+    @apply bg-[#162032] hover:bg-[#1e2a3a] text-gray-200 border border-[#1e2a3a] px-4 py-2 rounded-md text-sm transition-colors;
+  }
+  .input {
+    @apply bg-[#0a0f1a] border border-[#1e2a3a] rounded-md px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-[#10b981] placeholder-gray-600;
+  }
+  .select {
+    @apply bg-[#0a0f1a] border border-[#1e2a3a] rounded-md px-3 py-2 text-gray-200 text-sm focus:outline-none focus:border-[#10b981];
+  }
+  .table-row {
+    @apply border-b border-[#162032] hover:bg-[#111b2a] transition-colors cursor-pointer;
+  }
+  /* Status badges */
+  .badge {
+    @apply px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide;
+  }
+  .badge-delivered {
+    @apply bg-emerald-900/40 text-emerald-400 border border-emerald-700/40;
+  }
+  .badge-in_transit {
+    @apply bg-blue-900/40 text-blue-400 border border-blue-700/40;
+  }
+  .badge-delayed {
+    @apply bg-red-900/40 text-red-400 border border-red-700/40;
+  }
+  .badge-at_risk {
+    @apply bg-amber-900/40 text-amber-400 border border-amber-700/40;
+  }
+  /* Risk badges */
+  .risk-High {
+    @apply bg-red-900/40 text-red-400 border border-red-700/40;
+  }
+  .risk-Medium {
+    @apply bg-amber-900/40 text-amber-400 border border-amber-700/40;
+  }
+  .risk-Low {
+    @apply bg-emerald-900/40 text-emerald-400 border border-emerald-700/40;
+  }
+}
