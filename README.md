@@ -1,4 +1,4 @@
-# ShipLogiz
+# ShipLogix
 
 AI-powered supply chain visibility platform. Real-time shipment tracking, carrier scorecards, route analytics, and ML-driven delay prediction + anomaly detection.
 
