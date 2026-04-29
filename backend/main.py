@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine
 from models import Base
-from routers import anomalies, carriers, dashboard, deliveries, eta, predictions, routes, shipments, tracking
+from routers import anomalies, billing, carriers, dashboard, deliveries, eta, notifications, predictions, routes, shipments, tracking
 
 Base.metadata.create_all(bind=engine)
 
@@ -35,6 +35,8 @@ app.include_router(anomalies.router)
 app.include_router(predictions.router)
 app.include_router(eta.router)
 app.include_router(tracking.router)
+app.include_router(billing.router)
+app.include_router(notifications.router)
 
 
 @app.get("/")
