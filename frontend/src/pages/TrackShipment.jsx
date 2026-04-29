@@ -128,6 +128,25 @@ export default function TrackShipment() {
               </div>
             </div>
 
+            {/* AI ETA prediction */}
+            {data.eta && data.eta.predicted_eta && (
+              <div className="bg-[#0f1923] border border-[#10b981]/30 rounded-xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs text-[#10b981] uppercase tracking-widest">
+                    AI Predicted Arrival
+                  </div>
+                  <span className="text-[10px] text-[#8b9ab0]">95% confidence</span>
+                </div>
+                <div className="text-xl font-semibold text-emerald-300">
+                  {data.eta.predicted_eta}
+                </div>
+                <div className="text-xs text-[#8b9ab0] mt-1">
+                  Window: {data.eta.predicted_eta_lower} → {data.eta.predicted_eta_upper}
+                  <span className="ml-2 text-[#5d6f87]">±{data.eta.eta_confidence_hours}h</span>
+                </div>
+              </div>
+            )}
+
             {/* Timeline */}
             <div className="bg-[#0f1923] border border-[#1e2a3a] rounded-xl p-5">
               <div className="text-xs text-[#8b9ab0] uppercase tracking-widest mb-4">Timeline</div>
