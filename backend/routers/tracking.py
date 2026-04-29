@@ -1,7 +1,9 @@
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
+from ml.eta import eta_predictor
 from models import Shipment
 
 router = APIRouter(prefix="/track", tags=["tracking"])
@@ -40,6 +42,30 @@ def public_track(shipment_id: str, db: Session = Depends(get_db)):
         {"step": "Delivered",       "done": step >= 3},
     ]
 
+    eta_block = None
+    if s.status != "delivered":
+        df = pd.DataFrame([{
+            "shipment_id": s.shipment_id,
+            "carrier": s.carrier,
+            "origin": s.origin,
+            "destination": s.destination,
+            "weather_region": s.weather_region or "Unknown",
+            "transit_days": s.transit_days,
+            "month": s.month or 1,
+            "delay_hours": s.delay_hours or 0.0,
+            "status": s.status,
+            "ship_date": s.ship_date,
+        }])
+        pred = eta_predictor.predict_eta(df).iloc[0].to_dict()
+        eta_block = {
+            "predicted_eta": pred.get("predicted_eta"),
+            "predicted_eta_lower": pred.get("predicted_eta_lower"),
+            "predicted_eta_upper": pred.get("predicted_eta_upper"),
+            "predicted_transit_hours": float(pred.get("predicted_transit_hours", 0.0)),
+            "eta_confidence_hours": float(pred.get("eta_confidence_hours", 0.0)),
+            "model_ready": eta_predictor.ready,
+        }
+
     return {
         "shipment_id": s.shipment_id,
         "status": s.status,
@@ -52,5 +78,6 @@ def public_track(shipment_id: str, db: Session = Depends(get_db)):
         "delay_hours": s.delay_hours,
         "risk_label": s.risk_label,
         "is_anomaly": s.is_anomaly,
+        "eta": eta_block,
         "timeline": timeline,
     }

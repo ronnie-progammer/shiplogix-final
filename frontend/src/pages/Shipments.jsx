@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { shipmentsApi } from '../api'
+import { shipmentsApi, etaApi } from '../api'
 
 const CARRIERS = [
   'All', 'FedEx', 'UPS', 'DHL', 'USPS', 'Amazon Logistics',
@@ -15,11 +15,18 @@ function RiskBadge({ label }) {
   return <span className={`badge risk-${label}`}>{label}</span>
 }
 
+function formatEta(dt) {
+  if (!dt) return '—'
+  return dt.replace(' ', ' · ')
+}
+
 export default function Shipments() {
   const [shipments, setShipments] = useState([])
+  const [etaMap, setEtaMap] = useState({})
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ status: '', carrier: '', risk_label: '' })
   const [selected, setSelected] = useState(null)
+  const [selectedEta, setSelectedEta] = useState(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -31,9 +38,29 @@ export default function Shipments() {
     shipmentsApi.getAll(params)
       .then((r) => { setShipments(r.data); setLoading(false) })
       .catch(() => setLoading(false))
+
+    etaApi.getAll({ limit: 500 })
+      .then((r) => {
+        const map = {}
+        for (const row of r.data) {
+          map[row.shipment_id] = row
+        }
+        setEtaMap(map)
+      })
+      .catch(() => setEtaMap({}))
   }, [filters])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (!selected) { setSelectedEta(null); return }
+    if (selected.status === 'delivered') { setSelectedEta(null); return }
+    let cancelled = false
+    etaApi.getOne(selected.shipment_id)
+      .then((r) => { if (!cancelled) setSelectedEta(r.data) })
+      .catch(() => { if (!cancelled) setSelectedEta(null) })
+    return () => { cancelled = true }
+  }, [selected])
 
   const setFilter = (key, val) => setFilters((f) => ({ ...f, [key]: val }))
 
@@ -86,28 +113,44 @@ export default function Shipments() {
                     <th className="text-right px-4 py-2">Delay (h)</th>
                     <th className="text-left px-4 py-2">Risk</th>
                     <th className="text-left px-4 py-2 hidden xl:table-cell">Est. Arrival</th>
+                    <th className="text-left px-4 py-2 hidden xl:table-cell">Predicted ETA</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {shipments.map((s) => (
-                    <tr
-                      key={s.id}
-                      className={`table-row ${selected?.id === s.id ? 'bg-[#111b2a]' : ''}`}
-                      onClick={() => setSelected(selected?.id === s.id ? null : s)}
-                    >
-                      <td className="px-4 py-2.5 font-mono text-xs text-gray-300">{s.shipment_id}</td>
-                      <td className="px-4 py-2.5 text-[#8b9ab0] text-xs hidden lg:table-cell truncate max-w-[180px]">
-                        {s.origin.split(',')[0]} → {s.destination.split(',')[0]}
-                      </td>
-                      <td className="px-4 py-2.5 text-[#8b9ab0] text-xs">{s.carrier}</td>
-                      <td className="px-4 py-2.5"><StatusBadge status={s.status} /></td>
-                      <td className={`px-4 py-2.5 text-right text-xs ${s.delay_hours > 0 ? 'text-amber-400' : 'text-[#8b9ab0]'}`}>
-                        {s.delay_hours}
-                      </td>
-                      <td className="px-4 py-2.5"><RiskBadge label={s.risk_label} /></td>
-                      <td className="px-4 py-2.5 text-[#8b9ab0] text-xs hidden xl:table-cell">{s.estimated_arrival}</td>
-                    </tr>
-                  ))}
+                  {shipments.map((s) => {
+                    const eta = etaMap[s.shipment_id]
+                    return (
+                      <tr
+                        key={s.id}
+                        className={`table-row ${selected?.id === s.id ? 'bg-[#111b2a]' : ''}`}
+                        onClick={() => setSelected(selected?.id === s.id ? null : s)}
+                      >
+                        <td className="px-4 py-2.5 font-mono text-xs text-gray-300">{s.shipment_id}</td>
+                        <td className="px-4 py-2.5 text-[#8b9ab0] text-xs hidden lg:table-cell truncate max-w-[180px]">
+                          {s.origin.split(',')[0]} → {s.destination.split(',')[0]}
+                        </td>
+                        <td className="px-4 py-2.5 text-[#8b9ab0] text-xs">{s.carrier}</td>
+                        <td className="px-4 py-2.5"><StatusBadge status={s.status} /></td>
+                        <td className={`px-4 py-2.5 text-right text-xs ${s.delay_hours > 0 ? 'text-amber-400' : 'text-[#8b9ab0]'}`}>
+                          {s.delay_hours}
+                        </td>
+                        <td className="px-4 py-2.5"><RiskBadge label={s.risk_label} /></td>
+                        <td className="px-4 py-2.5 text-[#8b9ab0] text-xs hidden xl:table-cell">{s.estimated_arrival}</td>
+                        <td className="px-4 py-2.5 text-xs hidden xl:table-cell">
+                          {s.status === 'delivered'
+                            ? <span className="text-[#8b9ab0]">—</span>
+                            : eta?.predicted_eta
+                              ? (
+                                <span className="text-emerald-300">
+                                  {formatEta(eta.predicted_eta)}
+                                  <span className="text-[#5d6f87] ml-1">±{eta.eta_confidence_hours}h</span>
+                                </span>
+                              )
+                              : <span className="text-[#5d6f87]">predicting…</span>}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
               {shipments.length === 0 && (
@@ -163,6 +206,42 @@ export default function Shipments() {
                 </span>
               </div>
             </div>
+
+            {selected.status !== 'delivered' && (
+              <div className="pt-2 border-t border-[#1e2a3a] space-y-2 text-xs">
+                <div className="text-[#8b9ab0] font-semibold uppercase tracking-wide text-[10px]">
+                  ETA Prediction
+                </div>
+                {selectedEta ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-[#8b9ab0]">Predicted Arrival</span>
+                      <span className="text-emerald-300">{formatEta(selectedEta.predicted_eta)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#8b9ab0]">95% CI Lower</span>
+                      <span className="text-gray-300">{formatEta(selectedEta.predicted_eta_lower)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#8b9ab0]">95% CI Upper</span>
+                      <span className="text-gray-300">{formatEta(selectedEta.predicted_eta_upper)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#8b9ab0]">Confidence Band</span>
+                      <span className="text-gray-300">±{selectedEta.eta_confidence_hours}h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#8b9ab0]">Model</span>
+                      <span className={selectedEta.model_ready ? 'text-emerald-400' : 'text-amber-400'}>
+                        {selectedEta.model_ready ? 'RandomForest · ready' : 'fallback'}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-[#5d6f87]">Loading prediction…</div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

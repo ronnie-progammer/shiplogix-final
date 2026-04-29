@@ -38,4 +38,10 @@ export const predictionsApi = {
   getSummary: () => api.get('/predictions/summary'),
 }
 
+export const etaApi = {
+  getAll: (params) => api.get('/eta/', { params }),
+  getOne: (shipmentId) => api.get(`/eta/${shipmentId}`),
+  getSummary: () => api.get('/eta/summary'),
+}
+
 export default api
