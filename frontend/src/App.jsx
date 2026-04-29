@@ -11,6 +11,11 @@ import TrackShipment from './pages/TrackShipment'
 import RouteOptimizer from './pages/RouteOptimizer'
 import Defense from './pages/Defense'
 import Carbon from './pages/Carbon'
+import Billing from './pages/Billing'
+import Login from './auth/Login'
+import Signup from './auth/Signup'
+import ResetPassword from './auth/ResetPassword'
+import RequireAuth from './auth/RequireAuth'
 
 function PrivateLayout() {
   return (
@@ -29,6 +34,7 @@ function PrivateLayout() {
             <Route path="/optimizer" element={<RouteOptimizer />} />
             <Route path="/defense" element={<Defense />} />
             <Route path="/carbon" element={<Carbon />} />
+            <Route path="/billing" element={<Billing />} />
           </Routes>
         </main>
       </div>
@@ -36,18 +42,27 @@ function PrivateLayout() {
   )
 }
 
+const PUBLIC_PREFIXES = ['/track', '/login', '/signup', '/reset-password']
+
 export default function App() {
   const { pathname } = useLocation()
-  const isPublic = pathname.startsWith('/track')
+  const isPublic = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
 
   if (isPublic) {
     return (
       <Routes>
         <Route path="/track" element={<TrackShipment />} />
         <Route path="/track/:id" element={<TrackShipment />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     )
   }
 
-  return <PrivateLayout />
+  return (
+    <RequireAuth>
+      <PrivateLayout />
+    </RequireAuth>
+  )
 }
