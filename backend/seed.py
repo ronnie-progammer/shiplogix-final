@@ -11,6 +11,7 @@ sys.path.insert(0, ".")
 
 from database import Base, SessionLocal, engine
 from ml.engine import MLEngine
+from ml.eta import ETAPredictor
 from models import Shipment
 
 CARRIERS = [
@@ -157,9 +158,14 @@ def run_seed(n: int = 800) -> None:
     df = ml.score(df)
     df = ml.detect_anomalies(df)
 
+    eta = ETAPredictor()
+    eta.load_or_train(df)
+    eta_status = "trained" if eta.ready else "skipped (insufficient delivered samples)"
+
     anomaly_count = int(df["is_anomaly"].sum())
     high_risk = int((df["risk_label"] == "High").sum())
     print(f"  → {anomaly_count} anomalies detected, {high_risk} high-risk predictions")
+    print(f"  → ETA predictor {eta_status}")
 
     print("Writing to database...")
     records = df.to_dict(orient="records")
